@@ -60,60 +60,410 @@
           <h2 style="color: #004687; font-size: 1.5rem; margin-bottom: 15px;">Here is the Chatbot to ask queries about the dashboard</h2>
           <a href="http://10.125.119.152:8080/" style="display: inline-block; padding: 12px 24px; background: #004687; color: white; text-decoration: none; font-weight: bold; border-radius: 6px; border-bottom: 3px solid #ffc72c; transition: background 0.2s;">Buka Chatbot Utama</a>
       </div>
-      <div contenteditable="true" style="border: 1px solid #ccc; padding: 10px; min-height: 100px;">
-          Click here to <strong>edit</strong> this text!
-      </div>
+    
       <h2>Send Text to Local Ollama</h2>
-      <textarea id="promptInput" placeholder="Type your prompt for Ollama here..."></textarea>
-      <button id="sendBtn" onclick="sendToOllama()">Send to Local AI</button>
+      <textarea id="promptInput1" placeholder="Type your prompt for Ollama here..."></textarea>
+      <button id="sendBtn1" onclick="sendToOllama()">Send to Local AI</button>
 
       <h3>AI Response:</h3>
       <div id="responseBox">Waiting for input...</div>
 
+      <!-- Sidebar Left panel tracking sessions list dynamically -->
+      <div class="sidebar">
+          <div class="sidebar-header">
+              <h3 class="sidebar-title">Study Sessions</h3>
+              <button class="new-chat-btn" onclick="startNewChat()">+ New Conversation</button>
+          </div>
+          <div class="session-list-container" id="sessionList">
+              <!-- Rendered list items loaded dynamically -->
+              <div style="padding: 12px; color: #64748b; font-style: italic; font-size: 12px; text-align: center;">Loading histories...</div>
+          </div>
+      </div>
+  
+      <!-- Main Workspace active chatbot dialogues -->
+      <div class="main-workspace">
+          <div class="chat-header">
+              <h2>ITS Academic Data Warehouse AI Assistant</h2>
+          </div>
+          
+          <div id="responseBox">
+              <div class="empty-state">
+                  <p style="font-size: 16px; font-weight: 500; margin-bottom: 6px;">How can I assist your database queries today?</p>
+                  <p style="font-size: 13px; color: #94a3b8; margin: 0;">Select a study session on the left or type a new query below.</p>
+              </div>
+          </div>
+  
+          <div class="input-bar-container">
+              <div class="input-container">
+                  <textarea id="promptInput" placeholder="Type your academic query... (Press Enter to send)"></textarea>
+                  <button id="sendBtn" onclick="sendToOllama()">Send</button>
+              </div>
+          </div>
+      </div>
+
       <script>
+        let chatHistory = [];
+        let currentSessionId = null;
+
+        // Catch Enter key inputs to prevent needing manual button clicks
+        document.getElementById("promptInput").addEventListener("keydown", function(event) {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault(); 
+                sendToOllama();
+            }
+        });
+
+        // Initialize and load historical metadata lists from service instantly on load
+        window.addEventListener("DOMContentLoaded", () => {
+            loadSessions();
+        });
+
+        function setSamplePrompt(promptText) {
+            document.getElementById("promptInput").value = promptText;
+            document.getElementById("promptInput").focus();
+        }
+
+        function triggerToast(message) {
+            const toast = document.getElementById("toastNotification");
+            const toastText = document.getElementById("toastMessage");
+            toastText.textContent = message;
+            toast.classList.remove("hidden");
+            setTimeout(() => {
+                dismissToast();
+            }, 8000); // clear after 8 seconds
+        }
+
+        function dismissToast() {
+            document.getElementById("toastNotification").classList.add("hidden");
+        }
+
+        // Pull previous conversation arrays directly from history_service
+        async function loadSessions() {
+            try {
+                const response = await fetch("http://127.0.0.1:5051/get-sessions");
+                if (!response.ok) throw new Error("Could not fetch sessions list");
+                
+                const data = await response.json();
+                renderSessionList(data.sessions || []);
+            } catch (err) {
+                console.error("Failed to fetch study session indexes:", err);
+                document.getElementById("sessionList").innerHTML = `
+                    <div style="padding: 12px; color: #ef4444; font-size: 12px; text-align: center;">
+                        Failed to load histories.<br>Ensure history_service is active.
+                    </div>
+                `;
+            }
+        }
+
+        // Display individual clickable sessions items in the list UI
+        function renderSessionList(sessions) {
+            const container = document.getElementById("sessionList");
+            if (sessions.length === 0) {
+                container.innerHTML = `
+                    <div style="padding: 12px; color: #64748b; font-style: italic; font-size: 12px; text-align: center;">
+                        No previous chats.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = "";
+            sessions.forEach(session => {
+                const div = document.createElement("div");
+                div.className = "session-item";
+                if (session.session_id === currentSessionId) {
+                    div.classList.add("active");
+                }
+                div.textContent = session.title || "Untitled Query";
+                div.title = session.title; // hover details
+                
+                div.onclick = () => loadSessionHistory(session.session_id);
+                container.appendChild(div);
+            });
+        }
+
+        // Pull full array logs of single chosen session
+        async function loadSessionHistory(sessionId) {
+            currentSessionId = sessionId;
+            const responseBox = document.getElementById("responseBox");
+            responseBox.innerHTML = `
+                <div class="empty-state">
+                    <p style="font-size: 14px; font-style: italic;">Loading previous discussion logs...</p>
+                </div>
+            `;
+
+            // Highlight selected element instantly
+            document.querySelectorAll(".session-item").forEach(item => item.classList.remove("active"));
+            
+            try {
+                const response = await fetch(`http://127.0.0.1:5051/get-session/${sessionId}`);
+                if (!response.ok) throw new Error("Could not load history elements");
+                
+                const data = await response.json();
+                chatHistory = data.history || [];
+                
+                // Re-render selection items to update active highlighting state
+                loadSessions(); 
+
+                // Paint all loaded chats on response elements container
+                responseBox.innerHTML = "";
+                chatHistory.forEach(msg => {
+                    const msgDiv = document.createElement("div");
+                    if (msg.role === "user") {
+                        msgDiv.className = "message user-message";
+                        msgDiv.innerHTML = `<strong>You:</strong> ${escapeHtml(msg.content)}`;
+                    } else {
+                        msgDiv.className = "message ai-message";
+                        msgDiv.innerHTML = `<strong>AI:</strong> ${formatAIResponse(msg.content)}`;
+                    }
+                    responseBox.appendChild(msgDiv);
+                });
+
+                responseBox.scrollTop = responseBox.scrollHeight;
+
+            } catch (err) {
+                console.error("Failed to load historical session elements:", err);
+                responseBox.innerHTML = `
+                    <div class="empty-state">
+                        <p style="color: #ef4444; font-weight: 600;">Could not retrieve log details</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Resets current session trackers instantly
+        function startNewChat() {
+            currentSessionId = null;
+            chatHistory = [];
+            document.querySelectorAll(".session-item").forEach(item => item.classList.remove("active"));
+            
+            document.getElementById("responseBox").innerHTML = `
+                <div class="empty-state">
+                    <p style="font-size: 16px; font-weight: 500; margin-bottom: 6px;">How can I assist your database queries today?</p>
+                    <p style="font-size: 13px; color: #94a3b8; margin: 0;">Select a study session on the left or type a new query below.</p>
+                </div>
+            `;
+            document.getElementById("promptInput").focus();
+        }
+
         async function sendToOllama() {
-            const prompt = document.getElementById("promptInput").value;
+            const promptInput = document.getElementById("promptInput");
+            const userPrompt = promptInput.value.trim(); 
             const responseBox = document.getElementById("responseBox");
             const btn = document.getElementById("sendBtn");
+            const promptInput1 = document.getElementById("promptInput1");
+            const btn1 = document.getElementById("sendBtn1");
             
-            if (!prompt.trim()) return alert("Please type something first!");
-
-            responseBox.innerText = "Thinking...";
+            if (!userPrompt) {
+                return; // Guard against empty submits
+            }
+        
+            // 1. Clear "Waiting for input..." string placeholder on the very first message
+            if (chatHistory.length === 0) {
+                responseBox.innerHTML = "";
+            }
+        
+            // 2. Append User Prompt using clean native styles (safe dark text)
+            const userDiv = document.createElement("div");
+            userDiv.className = "message user-message";
+            userDiv.innerHTML = `<strong>You:</strong> ${escapeHtml(userPrompt)}`;
+            responseBox.appendChild(userDiv);
+            
+            // 3. Create a temporary italicized loading element
+            const tempStatusId = "thinking-" + Date.now();
+            const thinkingDiv = document.createElement("div");
+            thinkingDiv.id = tempStatusId;
+            thinkingDiv.className = "message ai-message thinking";
+            thinkingDiv.innerHTML = `<strong>AI:</strong> Thinking...`;
+            responseBox.appendChild(thinkingDiv);
+            
+            // Instantly force layout repaint and align scroll container down
+            responseBox.scrollTop = responseBox.scrollHeight;
+            
+            // Brief yield block so browser renders bubbles before local GPU query runs
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            // Save turn to chat history array
+            chatHistory.push({ "role": "user", "content": userPrompt });
+            
+            promptInput.value = ""; 
             btn.disabled = true;
-
+        
             try {
-                // Adjust "llama3" to match whatever model you have installed locally
+                // Fetch to local Flask gateway pipeline server
                 const response = await fetch("http://127.0.0.1:5050/ask-ai", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        text: prompt
-                    })
+                    body: JSON.stringify({ history: chatHistory })
                 });
-
-                if (!response.ok) throw new Error("Could not connect to Ollama.");
-
-                const data = await response.json();
-                if (data && data.message && data.message.content) {
-                    // This extracts: 'Hello! 👋 How is your day going? Is there something I can help you with today?'
-                    responseBox.innerText = data.message.content;
-                } else if (data && data.response) {
-                    // Fallback if you update the Python gateway later
-                    responseBox.innerText = data.response;
-                } else if (data && data.error) {
-                    responseBox.innerText = "Error: " + data.error;
-                } else {
-                    responseBox.innerText = "Error: Could not extract text. Full payload:\n" + JSON.stringify(data);
+        
+                if (!response.ok) {
+                    throw new Error(`Pipeline returned connection status: ${response.status}`);
                 }
-
+        
+                // Capture response as raw text to prevent the browser parser from crashing on non-standard JSON tokens
+                const responseRawText = await response.text();
+        
+                // Regex replacement maps illegal standalone NaN float values to safe standard JSON nulls
+                const sanitizedJsonText = responseRawText.replace(/\bNaN\b/g, "null");
+        
+                // Safely parse the valid JSON text
+                const data = JSON.parse(sanitizedJsonText);
+                console.log("Database Response Data (Sanitized):", data);
+                
+                let aiReply = "";
+                let rawRecords = [];
+                let queryId = ""; // Track our backend cache reference ID instead of raw SQL
+                
+                if (data.message) {
+                    aiReply = data.message.content || "";
+                    rawRecords = data.message.raw_data || [];
+                    queryId = data.message.query_id || ""; // Extract the reference cache ID
+                }
+                console.log("--> THE EXTRACTED QUERY ID IS:", queryId);
+        
+                // Add response payload to local context history array
+                chatHistory.push({ "role": "assistant", "content": aiReply });
+        
+                // 4. Locate temporary loading element and inject clean formatted outputs
+                const loaderElement = document.getElementById(tempStatusId);
+                if (loaderElement) {
+                    loaderElement.classList.remove("thinking"); // Remove italicized styles
+                    
+                    let finalHTML = `<strong>AI:</strong> ${formatAIResponse(aiReply)}`;
+                    
+                    // Render raw datasets in a simple visual grid table if rows exist, passing the cache reference ID
+                    if (rawRecords && rawRecords.length > 0) {
+                        finalHTML += renderHtmlTable(rawRecords, queryId);
+                    }
+        
+                    loaderElement.innerHTML = finalHTML;
+                }
+        
+                responseBox.scrollTop = responseBox.scrollHeight;
+        
             } catch (error) {
-                responseBox.innerText = "Error: Make sure Ollama is running and OLLAMA_ORIGINS='*' is set in your terminal.";
-                console.error(error);
+                console.error("Pipeline failure:", error);
+                const loaderElement = document.getElementById(tempStatusId);
+                if (loaderElement) {
+                    loaderElement.innerHTML = `<strong>AI:</strong> <span style="color: red; font-weight: bold;">Pipeline failure. Please check python console log outputs.</span>`;
+                }
             } finally {
                 btn.disabled = false;
             }
         }
-      </script>
+
+        // Simple Markdown Code Block Converter to display high visual output
+        function formatAIResponse(text) {
+            if (!text) return "";
+            let escaped = escapeHtml(text);
+            
+            // 1. Process bold markdown elements (**text**)
+            escaped = escaped.replace(/\*\*([\s\S]*?)\*\*/g, '<strong class="text-indigo-400 font-semibold">$1</strong>');
+
+            // 2. Convert standard code wrappers (```sql ... ```) to styling boxes
+            escaped = escaped.replace(/```sql([\s\S]*?)```/g, (match, code) => {
+                return `
+                    <div class="my-3 border border-slate-800 rounded-xl overflow-hidden shadow-md">
+                        <div class="bg-slate-950/80 px-4 py-2 border-b border-slate-800 flex justify-between items-center text-xs text-slate-400 font-mono">
+                            <span>PostgreSQL Statement</span>
+                            <span class="text-[10px] text-indigo-400 px-1.5 py-0.5 rounded bg-indigo-950/60 border border-indigo-900/50">SQL</span>
+                        </div>
+                        <pre class="bg-slate-950 p-4 overflow-x-auto text-xs font-mono text-emerald-400 leading-relaxed"><code>${code.trim()}</code></pre>
+                    </div>
+                `;
+            });
+
+            // Fallback for non-language specific blocks
+            escaped = escaped.replace(/```([\s\S]*?)```/g, (match, code) => {
+                return `<pre class="bg-slate-950 border border-slate-800 rounded-xl p-4 my-3 overflow-x-auto text-xs font-mono text-slate-300">${code.trim()}</pre>`;
+            });
+
+            // Convert line breaks correctly
+            escaped = escaped.split('\n').join('<br>');
+
+            return escaped;
+        }
+
+        // Dynamically creates interactive scrollable HTML table layouts from JSON
+        function renderHtmlTable(records, queryId) {
+            if (!records || !Array.isArray(records) || records.length === 0) return "";
+
+            const validRecords = records.filter(r => r && typeof r === 'object');
+            if (validRecords.length === 0) return "";
+
+            const columns = Object.keys(validRecords[0]);
+
+            let tableHeader = "<tr>";
+            columns.forEach(col => {
+                tableHeader += `<th>${escapeHtml(col)}</th>`;
+            });
+            tableHeader += "</tr>";
+
+            let tableRows = "";
+            validRecords.forEach(row => {
+                tableRows += "<tr>";
+                columns.forEach(col => {
+                    const cellVal = row[col];
+                    let displayValue = "";
+                    if (cellVal === null || cellVal === undefined) {
+                        displayValue = '<span style="color: #94a3b8; font-style: italic;">NULL</span>';
+                    } else if (typeof cellVal === 'object') {
+                        displayValue = escapeHtml(JSON.stringify(cellVal));
+                    } else {
+                        displayValue = escapeHtml(String(cellVal));
+                    }
+                    tableRows += `<td>${displayValue}</td>`;
+                });
+                tableRows += "</tr>";
+            });
+
+            // If a valid Query ID is present, construct the download button using the ID string directly
+            let csvButtonHTML= "";
+            if (queryId) {
+                csvButtonHTML = `
+                    <button onclick="downloadCSV(\'${queryId}\')" style="background-color: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; transition: background-color 0.15s;" onmouseover="this.style.backgroundColor='#059669'" onmouseout="this.style.backgroundColor='#10b981'">
+                        Download Full CSV
+                    </button>
+                `;
+            }
+
+            return `
+                <div style="margin-top: 15px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <strong style="color: #1e3a8a; margin: 0;">Query Output Records (Previewing top 10):</strong>
+                        ${csvButtonHTML}
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>${tableHeader}</thead>
+                            <tbody>${tableRows}</tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Prevent injection and cross site scripting
+        function escapeHtml(str) {
+            if (!str) return "";
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+        
+        // Action helper routing cache requests to your gateway backend endpoint
+        function downloadCSV(queryId) {
+            if (!queryId) return;
+            // Fetch by reference ID rather than sending the raw SQL string
+            const downloadUrl = `http://127.0.0.1:5050/download-csv?id=${queryId}`;
+            window.open(downloadUrl, '_blank');
+        }
+    </script>
+
   </main>
 
   <footer id="footer" class="footer">

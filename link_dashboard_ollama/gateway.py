@@ -5,29 +5,26 @@ import requests
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# ACTION REQUIRED: Change this to match the exact NAME from your 'ollama list' command
 MODEL_NAME = "qwen3.5:9b"  
 
 OLLAMA_API = "http://localhost:11434/api/chat"
 
 @app.route('/ask-ai', methods=['POST'])
 def ask_ai():
-    user_text = request.json.get("text", "")
-    print(f"\n[TERMINAL RECEIVED PROMPT]: {user_text}")
+    # 1. Grab the array of message histories sent from the website browser
+    conversation_history = request.json.get("history", [])
     
+    print(f"\n[SERVER LOG]: Processing chat turn #{len(conversation_history)}")
+    
+    # 2. Package the full history array into Ollama's native endpoint framework
     payload = {
         "model": MODEL_NAME,
-        "messages": [
-            {
-                "role": "user",
-                "content": user_text
-            }
-        ],
+        "messages": conversation_history, # Sends the entire chain of past dialogue
         "stream": False
     }
     
     try:
-        response = requests.post(OLLAMA_API, json=payload, timeout=30)
+        response = requests.post(OLLAMA_API, json=payload, timeout=900)
         print(f"[OLLAMA RESPONSE CODE]: {response.status_code}")
         
         if response.status_code != 200:

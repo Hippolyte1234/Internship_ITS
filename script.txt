@@ -1,0 +1,75 @@
+<script>
+          let chatHistory = [];
+          
+          async function sendToOllama() {
+              const promptInput = document.getElementById("promptInput");
+              const userPrompt = promptInput.value.trim(); 
+              
+              const responseBox = document.getElementById("responseBox");
+              const btn = document.getElementById("sendBtn");
+              
+              if (!userPrompt) return alert("Please type a message!");
+      
+              // 1. Clear "Waiting for input..." placeholder only on the very first message
+              if (chatHistory.length === 0) {
+                  responseBox.innerHTML = "";
+              }
+      
+              // 2. Append the user's question to the screen immediately
+              responseBox.innerHTML += `<p style="margin: 10px 0;"><strong>You:</strong> ${userPrompt}</p>`;
+              
+              // 3. Create a temporary 'Thinking...' placeholder container for this turn
+              const tempStatusId = "thinking-" + Date.now();
+              responseBox.innerHTML += `<p id="${tempStatusId}" style="color: #888; font-style: italic; margin: 10px 0;"><strong>AI:</strong> Thinking...</p><hr>`;
+              
+              // Auto-scroll to the bottom so the user sees the new text
+              responseBox.scrollTop = responseBox.scrollHeight;
+      
+              // 4. Save to chat memory list
+              chatHistory.push({ "role": "user", "content": userPrompt });
+            
+              promptInput.value = ""; 
+              btn.disabled = true;
+      
+              try {
+                  const response = await fetch("http://127.0.0.1:5050/ask-ai", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ history: chatHistory })
+                  });
+      
+                  if (!response.ok) throw new Error("Could not connect to Ollama.");
+      
+                  const data = await response.json();
+                  
+                  let aiReply = "";
+                  if (data.message && data.message.content) {
+                      aiReply = data.message.content;
+                  } else if (data.response) {
+                      aiReply = data.response;
+                  }
+      
+                  // 5. Append AI reply into the continuous background memory array
+                  chatHistory.push({ "role": "assistant", "content": aiReply });
+          
+                  // 6. Target the specific temporary placeholder and replace it with the true text
+                  const loaderElement = document.getElementById(tempStatusId);
+                  if (loaderElement) {
+                      loaderElement.style.whiteSpace = "pre-wrap"; // <-- Add this line!
+                      loaderElement.innerHTML = `<strong>AI:</strong> ${aiReply}`;
+                  }
+      
+                  // Auto-scroll again for the final generated response block
+                  responseBox.scrollTop = responseBox.scrollHeight;
+      
+              } catch (error) {
+                  const loaderElement = document.getElementById(tempStatusId);
+                  if (loaderElement) {
+                      loaderElement.innerHTML = `<strong>AI:</strong> <span style="color: red;">Error processing text context pipeline.</span>`;
+                  }
+                  console.error(error);
+              } finally {
+                  btn.disabled = false;
+              }
+          }
+      </script>
