@@ -1,0 +1,87 @@
+<div class="chatbot-shell" style="padding: 20px; text-align: center; background: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin: 20px;">
+  <h2 style="color: #004687; font-size: 1.5rem; margin-bottom: 15px;">Here is the Chatbot to ask queries about the dashboard</h2>
+  <a href="http://10.125.119.152:8080/" style="display: inline-block; padding: 12px 24px; background: #004687; color: white; text-decoration: none; font-weight: bold; border-radius: 6px; border-bottom: 3px solid #ffc72c; transition: background 0.2s;">Buka Chatbot Utama</a>
+</div>
+
+<div class="chatbot-layout" style="display: flex; gap: 16px; padding: 0 20px 20px;">
+  <aside class="sidebar" style="width: 280px; background: #f8fafc; border-radius: 10px; padding: 12px;">
+    <div class="sidebar-header" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px;">
+      <h3 class="sidebar-title" style="margin: 0;">Sessions</h3>
+      <button class="new-chat-btn" type="button" (click)="startNewChat()" style="cursor: pointer;">+ New Conversation</button>
+    </div>
+
+    <div class="session-list-container">
+      @if (sessions.length === 0) {
+        <div style="padding: 12px; color: #64748b; font-style: italic; font-size: 12px; text-align: center;">No previous chats.</div>
+      } @else {
+        @for (session of sessions; track session.session_id) {
+          <div
+            class="session-item"
+            [class.active]="session.session_id === currentSessionId"
+            (click)="loadSessionHistory(session.session_id)"
+            [title]="session.title || 'Untitled Query'"
+            style="padding: 10px; border-radius: 8px; cursor: pointer; margin-bottom: 8px; background: #fff; border: 1px solid #e2e8f0;"
+          >
+            {{ session.title || 'Untitled Query' }}
+          </div>
+        }
+      }
+    </div>
+  </aside>
+
+  <section class="main-workspace" style="flex: 1; background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+    <div class="chat-header">
+      <h2>ITS Academic Data Warehouse AI Assistant</h2>
+    </div>
+
+    <div id="responseBox" class="response-box" style="min-height: 50px; max-height: 420px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; background: #f8fafc;">
+      @if (chatHistory.length === 0) {
+        <div class="empty-state">
+          <p style="font-size: 16px; font-weight: 500; margin-bottom: 6px;">How can I assist your database queries today?</p>
+          <p style="font-size: 13px; color: #94a3b8; margin: 0;">Select a session on the left or type a new query below.</p>
+        </div>
+      } @else {
+        @for (message of chatHistory; track $index) {
+          <div
+            class="message"
+            [class.user-message]="message.role === 'user'"
+            [class.ai-message]="message.role === 'assistant'"
+            [class.system-message]="message.role === 'system'"
+            style="margin-bottom: 10px;"
+          >
+            <div [innerHTML]="message.formattedContent"></div>
+          </div>
+        }
+      }
+    </div>
+
+    <div class="input-bar-container" style="margin-top: 14px;">
+      <div class="input-container" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <textarea
+          placeholder="Type your academic query... (Press Enter to send)"
+          [value]="promptInput"
+          (input)="promptInput = $any($event.target).value"
+          (keydown.enter)="onKeydown($any($event))"
+          style="flex: 1; min-height: 70px; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1;"
+        ></textarea>
+
+        <button type="button" (click)="sendToOllama()" [disabled]="isSending" style="cursor: pointer;">
+          {{ isSending ? 'Sending...' : 'Send' }}
+        </button>
+
+        <label class="switch">
+          <input type="checkbox" checked>
+          <span class="slider round"></span>
+        </label>
+
+        <button type="button" style="cursor: pointer;">Recommendation</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+@if (isToastVisible) {
+  <div id="toastNotification" style="position: fixed; right: 20px; bottom: 20px; padding: 12px 16px; background: #0f172a; color: white; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
+    <span id="toastMessage">{{ toastMessage }}</span>
+  </div>
+}

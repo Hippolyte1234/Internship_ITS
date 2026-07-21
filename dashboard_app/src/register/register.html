@@ -1,0 +1,37 @@
+<section class="login-shell" aria-labelledby="register-title">
+  <div class="login-card">
+    <div class="branding">
+      <p class="eyebrow">Dashboard access</p>
+      <h1 id="register-title">Create account</h1>
+      <p>Create an account to continue with Firebase authentication.</p>
+    </div>
+
+    @if (!isRegistered()) {
+      <form class="login-form" [formGroup]="registerForm" (ngSubmit)="submitRegister()">
+        <label class="field">
+          <span>Email</span>
+          <input formControlName="email" type="email" autocomplete="email" placeholder="name@company.com" />
+        </label>
+
+        <label class="field">
+          <span>Password</span>
+          <input formControlName="password" type="password" autocomplete="new-password" placeholder="Enter password" />
+        </label>
+
+        @if (authMessage()) {
+          <p class="message error">{{ authMessage() }}</p>
+        }
+
+        <button type="submit" [disabled]="isSubmitting()">Create account</button>
+        <button type="button" class="secondary" (click)="goToLogin()">Back to sign in</button>
+      </form>
+    } @else {
+      <div class="success-panel" role="status">
+        <p class="eyebrow">Welcome aboard</p>
+        <h2>{{ registerForm.get('email')?.value }}</h2>
+        <p>{{ authMessage() }}</p>
+        <button type="button" class="secondary" (click)="goToLogin()">Go to sign in</button>
+      </div>
+    }
+  </div>
+</section>

@@ -1,0 +1,47 @@
+@if (currentUser() === null) {
+  <p>Well, it seems you're not logged in. Click on Logout</p>
+} @else {
+  
+
+<section class="login-shell" aria-labelledby="settings-title">
+      <div class="login-card">
+        <div class="branding">
+          <p class="eyebrow">Settings</p>
+          <h1 id="settings-title">Create another account</h1>
+          <p>Create a new user or admin account from this secure panel.</p>
+        </div>
+
+        <form class="login-form" [formGroup]="settingsForm" (ngSubmit)="createAccount()">
+          <label class="field">
+            <span>Email</span>
+            <input formControlName="email" type="email" autocomplete="email" placeholder="new.user@company.com" />
+          </label>
+
+          <label class="field">
+            <span>Password</span>
+            <input formControlName="password" type="password" autocomplete="new-password" placeholder="Enter password" />
+          </label>
+
+          @if (userRole() === 'admin') {
+            <p class="message info">As an admin, you can create new user or admin accounts.</p>
+            <label class="field">
+              <span>Role</span>
+              <select formControlName="role">
+                <option value="classic">Classic user</option>
+                <option value="admin">Administrator</option>
+              </select>
+            </label>
+          } @else {
+            <p class="message info">You can only create classic user accounts. If you want an admin account, please ask an administrator.</p>
+          }
+          
+
+          @if (message()) {
+            <p class="message error">{{ message() }}</p>
+          }
+
+          <button type="submit" [disabled]="isSubmitting()">Create account</button>
+        </form>
+      </div>
+</section>
+}

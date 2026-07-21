@@ -40,7 +40,7 @@ class MyPrivateVanna:
         translation_prompt = (
             f"You are a bilingual database administrator translation assistant.\n"
             f"Context: The user is querying the database of ITS university (Institut Teknologi Sepuluh Nopember)"
-            f"Task: Convert the user's data request into a natural, grammatically correct Indonesian sentence "
+            f"Task: Convert the user's data request into a concise, natural Indonesian sentence"
             f"using formal database schema and academic data warehouse terminology.\n\n"
             f"User Request: {question}\n"
             f"CRITICAL: Output ONLY the translated Indonesian sentence. Do not include introductory text, explanations, or quotes."
@@ -68,9 +68,10 @@ class MyPrivateVanna:
                 {"id": doc_id, "text": doc_text} 
                 for doc_id, doc_text in zip(raw_ids, raw_docs)
             ]
+            print("passages:", passages) #debug
             
             # 3. Use FlashRank to pick the top choices out of the 20 results
-            rerank_request = RerankRequest(query=indonesian_sentence, passages=passages)
+            rerank_request = RerankRequest(query=question, passages=passages)
             rerank_results = ranker.rerank(rerank_request)
             
             top_passages = rerank_results[:3]
@@ -91,14 +92,14 @@ class MyPrivateVanna:
             f"{schema_context}\n\n"
             f"Task: Convert this request into a clean PostgreSQL query string: {question}\n\n"
             f"CRITICAL RULES:\n"
-            f"1. You MUST ALWAYS include the correct schema name prefix before the table name (e.g., 'akademik.table').\n"
-            f"2. DEDUPLICATION RULE: Whenever the user asks for a 'list', 'all options', or unique categories, you MUST utilize the `DISTINCT` keyword to prevent duplicate rows from polluting the output grid.\n"
-            f"3. Whenever necessary, use 'WHERE' keyword to cross search from the tables needed.\n"
-            f"4. Output ONLY the raw executable SQL inside a markdown block wrapper:\n"
+            f"2. You MUST ALWAYS include the correct schema name prefix before the table name (e.g., 'akademik.table').\n"
+            f"3. DEDUPLICATION RULE: Whenever the user asks for a 'list', 'all options', or unique categories, you MUST utilize the `DISTINCT` keyword to prevent duplicate rows from polluting the output grid.\n"
+            f"4. Whenever necessary, use 'WHERE' keyword to cross search from the tables needed.\n"
+            f"5. Output ONLY the raw executable SQL inside a markdown block wrapper:\n"
             f"```sql\n"
             f"SELECT ... FROM ...;\n"
             f"```\n"
-            f"5. Do not write explanations, introductions, or warnings. Output ONLY the code block."
+            f"6. Do not write explanations, introductions, or warnings. Output ONLY the code block."
         )
 
         print("\n" + "="*60)
@@ -229,7 +230,8 @@ def ask_ai():
                 "content": ai_reply,
                 "query_id": query_id,
                 "raw_data": records
-            }
+            },
+            "session_id": session_id
         })
         
         

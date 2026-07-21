@@ -1,0 +1,86 @@
+.input-wrapper input {
+  margin: 0.5rem 0; 
+  padding: 0.7rem 1rem; 
+  border: 1px solid #ccc; 
+  border-radius: 0.75rem; 
+  width: 100%;
+  box-sizing: border-box; /* Prevents input padding from blowing up its layout width */
+}
+
+.input-wrapper button {
+  width: fit-content; 
+  padding: 0.7rem 1rem; 
+  border: none; 
+  border-radius: 0.75rem; 
+  background: #2563eb; 
+  color: white; 
+  cursor: pointer;
+  white-space: nowrap; /* Prevents your button text from breaking onto two lines */
+}
+
+/* Toast container positioning */
+.toast-error-container {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  min-width: 300px;
+  max-width: 450px;
+  background-color: #fef2f2; /* Light red fill */
+  border-left: 4px solid #ef4444; /* Sharp red left edge indicator */
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  z-index: 9999; /* Force layout stack level to remain on top */
+  animation: slideIn 0.2s ease-out;
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.error-icon {
+  font-size: 1.25rem;
+}
+
+.error-text {
+  color: #991b1b; /* Dark red readable typography text */
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+}
+
+.toast-close-btn {
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.2rem;
+  line-height: 1;
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toast-close-btn:hover {
+  background-color: #fee2e2;
+}
+
+/* Smooth entry vector slider animation */
+@keyframes slideIn {
+  from {
+    transform: translateY(-1rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

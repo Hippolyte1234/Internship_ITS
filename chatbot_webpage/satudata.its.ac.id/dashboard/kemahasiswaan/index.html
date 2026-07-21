@@ -7,6 +7,68 @@
   <title>Dashboard Details</title>
   <meta name="description" content="">
   <meta name="keywords" content="">
+  <style>
+      .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+    
+    .switch input { 
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      -webkit-transition: .4s;
+      transition: .4s;
+    }
+    
+    
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      -webkit-transition: 1.4s;
+      transition: 1.4s;
+    }
+    
+    input:checked + .slider {
+      background-color: #2196F3;
+    }
+    
+    input:focus + .slider {
+      box-shadow: 0 0 1px #2196F3;
+    }
+    
+    input:checked + .slider:before {
+      -webkit-transform: translateX(26px);
+      -ms-transform: translateX(26px);
+      transform: translateX(26px);
+    }
+    
+    /* Rounded sliders */
+    .slider.round {
+      border-radius: 34px;
+    }
+    
+    .slider.round:before {
+      border-radius: 50%;
+    }
+  </style>
 
   <!-- Favicons -->
   <link href="../../assets/img/favicon.png" rel="icon">
@@ -71,7 +133,7 @@
       <!-- Sidebar Left panel tracking sessions list dynamically -->
       <div class="sidebar">
           <div class="sidebar-header">
-              <h3 class="sidebar-title">Study Sessions</h3>
+              <h3 class="sidebar-title">Sessions</h3>
               <button class="new-chat-btn" onclick="startNewChat()">+ New Conversation</button>
           </div>
           <div class="session-list-container" id="sessionList">
@@ -89,7 +151,7 @@
           <div id="responseBox">
               <div class="empty-state">
                   <p style="font-size: 16px; font-weight: 500; margin-bottom: 6px;">How can I assist your database queries today?</p>
-                  <p style="font-size: 13px; color: #94a3b8; margin: 0;">Select a study session on the left or type a new query below.</p>
+                  <p style="font-size: 13px; color: #94a3b8; margin: 0;">Select a session on the left or type a new query below.</p>
               </div>
           </div>
   
@@ -97,6 +159,11 @@
               <div class="input-container">
                   <textarea id="promptInput" placeholder="Type your academic query... (Press Enter to send)"></textarea>
                   <button id="sendBtn" onclick="sendToOllama()">Send</button>
+                  <label class="switch">
+                      <input type="checkbox" checked>
+                      <span class="slider round"></span>
+                  </label>
+                  <button id="recoBtn" onclick="">Get a recomended action</button>
               </div>
           </div>
       </div>
@@ -146,7 +213,7 @@
                 const data = await response.json();
                 renderSessionList(data.sessions || []);
             } catch (err) {
-                console.error("Failed to fetch study session indexes:", err);
+                console.error("Failed to fetch session indexes:", err);
                 document.getElementById("sessionList").innerHTML = `
                     <div style="padding: 12px; color: #ef4444; font-size: 12px; text-align: center;">
                         Failed to load histories.<br>Ensure history_service is active.
@@ -240,7 +307,7 @@
             document.getElementById("responseBox").innerHTML = `
                 <div class="empty-state">
                     <p style="font-size: 16px; font-weight: 500; margin-bottom: 6px;">How can I assist your database queries today?</p>
-                    <p style="font-size: 13px; color: #94a3b8; margin: 0;">Select a study session on the left or type a new query below.</p>
+                    <p style="font-size: 13px; color: #94a3b8; margin: 0;">Select a session on the left or type a new query below.</p>
                 </div>
             `;
             document.getElementById("promptInput").focus();
@@ -294,7 +361,10 @@
                 const response = await fetch("http://127.0.0.1:5050/ask-ai", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ history: chatHistory })
+                    body: JSON.stringify({ 
+                        history: chatHistory,
+                        session_id: currentSessionId
+                    })
                 });
         
                 if (!response.ok) {
@@ -310,6 +380,11 @@
                 // Safely parse the valid JSON text
                 const data = JSON.parse(sanitizedJsonText);
                 console.log("Database Response Data (Sanitized):", data);
+                
+                if (data.session_id) {
+                    console.log(data.session_id)
+                    currentSessionId = data.session_id;
+                }
                 
                 let aiReply = "";
                 let rawRecords = [];

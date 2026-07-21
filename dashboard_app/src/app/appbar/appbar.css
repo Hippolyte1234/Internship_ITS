@@ -1,0 +1,81 @@
+.app-shell {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+.app-drawer {
+  flex: 0 0 240px;
+  width: 240px;
+  background: #0f172a;
+  color: white;
+  padding: 1rem 0;
+  box-sizing: border-box;
+}
+
+.drawer-header {
+  padding: 0 1rem 1rem;
+}
+
+.drawer-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.drawer-nav {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.drawer-nav a {
+  color: white;
+  text-decoration: none;
+  padding: 0.8rem 1rem;
+  display: block;
+}
+
+.drawer-nav a.active-link {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.content-area {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.menu-button {
+  border: none;
+  background: #2563eb;
+  color: white;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  cursor: pointer;
+}
+
+.button {
+  border: none;
+  background: #2563eb;
+  color: white;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  cursor: pointer;
+}
+
+.page-content {
+  padding: 1.5rem;
+  flex: 1 1 auto;
+  overflow: auto;
+}

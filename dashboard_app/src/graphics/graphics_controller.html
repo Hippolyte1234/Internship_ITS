@@ -1,0 +1,56 @@
+<div class="ai-dashboard-container">
+  
+  <!-- 1. Input Controls -->
+  <div class="input-wrapper">
+    <input type="text" [(ngModel)]="chartService.promptInput" placeholder="Ask about data...">
+    <button (click)="onAskAiClick()">Ask AI</button>
+  </div>
+
+  <!-- 2. Display the graphic canvas layout if records were returned -->
+  <div class="chart-display-frame" *ngIf="chartData && !chartService.isSending">
+    <canvas baseChart [data]="chartData" [type]="chartType"></canvas>
+  </div>
+
+  <!-- 3. DISPLAY THIS TEXT PANEL IF THE AI REFUSED OR EXPLAINED AN ISSUE -->
+  <div class="ai-text-explanation-box" *ngIf="aiTextResponse && !chartService.isSending">
+    <div class="ai-avatar-badge">🤖 AI System Message:</div>
+    <!-- Using innerHTML because your service formatAIResponse utility outputs safe styling HTML tags -->
+    <p [innerHTML]="aiTextResponse"></p>
+  </div>
+
+  <!-- 2. Dynamic graphic view panel -->
+  <div class="chart-display-frame" *ngIf="chartData && !chartService.isSending">
+    <canvas baseChart
+            [data]="chartData"
+            [type]="chartType">
+    </canvas>
+
+    <div style="margin: 20px; padding: 15px; background: #0f172a; border: 1px dashed #334155; border-radius: 8px;">
+      <h4 style="color: #38bdf8; margin-top: 0; font-family: monospace;">🔍 Pipeline State Visual Debugger</h4>
+      <p style="color: #94a3b8; font-size: 12px;">
+        <strong>Loading status:</strong> {{ chartService.isSending ? '🔄 WAITING ON LOCAL PIPELINE' : '✅ COMPLETED' }}
+      </p>
+      <p style="color: #94a3b8; font-size: 12px;">
+        <strong>Has Chart Data Object:</strong> {{ chartData ? '🟢 YES' : '🔴 NO' }}
+      </p>
+      
+      <!-- If data exists, dump it on the screen so you know the frontend successfully captured it -->
+      <pre *ngIf="chartData" style="color: #34d399; font-size: 11px; overflow-x: auto; background: #020617; padding: 10px; border-radius: 4px;"><code>{{ chartData | json }}</code></pre>
+    </div>
+  </div>
+
+  <!-- 3. Toast alerts -->
+  <div *ngIf="chartService.isToastVisible" class="toast-error">
+    {{ chartService.toastMessage }}
+    <button (click)="chartService.dismissToast()">X</button>
+  </div>
+
+  <!-- 3. Toast alerts for AI pipeline failures -->
+  <div *ngIf="chartService.isToastVisible" class="toast-error-container">
+    <div class="toast-content">
+      <span class="error-icon">⚠️</span>
+      <span class="error-text">{{ chartService.toastMessage }}</span>
+    </div>
+    <button class="toast-close-btn" (click)="chartService.dismissToast()">✕</button>
+  </div>
+</div>

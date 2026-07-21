@@ -1,0 +1,39 @@
+@if (currentUser() === null) {
+  <p>Well, it seems you're not logged in. Click on Logout</p>
+}
+
+@else {
+    <div>
+    <h1>Dashboard</h1>
+    <h2>Logged in as {{ userRole() }}: {{ userEmail() }}</h2>
+    </div>
+
+    <div class="row justify-content-center mb-4 p-5">
+    <iframe
+        title="Mahasiswa"
+        width="1024"
+        height="768"
+        frameborder="0"
+        allowfullscreen="true"
+        src="https://app.powerbi.com/view?r=eyJrIjoiNWVjZTc4YTItYjcwNy00MTdhLWFmZTEtNTE4MjRlODY4OWNjIiwidCI6IjFkNTE2OWFjLWM3Y2ItNDI3NS05NzY0LWJmOGM5YzM2NGE0YyIsImMiOjEwfQ%3D%3D"
+        allowFullScreen="true"
+    ></iframe>
+    </div>
+
+    @if (userRole() === 'admin') {
+        <section style="margin: 2rem 0; padding: 1.5rem; border: 1px solid #dbe4f0; border-radius: 1rem; background: #f8fafc; max-width: 720px;">
+        <p> You are an admin, you can see and interact with this</p>
+            <h3>Ask a question</h3>
+        <p style="margin: 0.5rem 0 1rem; color: #475569;">Share anything you want to discuss with the team.</p>
+
+        <div class="ai-analytics-section">
+            <h2>AI Data Assistant</h2>
+            <p>Ask a question to generate a graphic from the database:</p>
+            
+            <app-ai-chart></app-ai-chart>
+            
+        </div>
+
+        </section>
+    }
+}

@@ -1,0 +1,37 @@
+<div class="app-shell">
+  @if (isOpen()) {
+    <aside class="app-drawer" aria-label="Sidebar navigation">
+      <div class="drawer-header">
+        <h2>Navigation</h2>
+      </div>
+
+      <nav class="drawer-nav">
+        <a routerLink="/dashboard" routerLinkActive="active-link" [routerLinkActiveOptions]="{ exact: true }">
+          <span>Dashboard</span>
+        </a>
+        <a routerLink="/chatbot" routerLinkActive="active-link" [routerLinkActiveOptions]="{ exact: true }">
+          <span>Chatbot</span>
+        </a>
+        <a routerLink="/settings" routerLinkActive="active-link" [routerLinkActiveOptions]="{ exact: true }">
+          <span>Settings</span>
+        </a>
+        <button type="button" class="logout-button" (click)="signOutUser()">
+          <span>Logout</span>
+        </button>
+      </nav>
+    </aside>
+  }
+
+  <main class="content-area">
+    <header class="topbar">
+      <button type="button" class="menu-button" (click)="toggleDrawer()" aria-label="Toggle navigation">
+        ☰
+      </button>
+      <span>Dashboard App</span>
+    </header>
+
+    <div class="page-content">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+</div>
