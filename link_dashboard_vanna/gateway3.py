@@ -10,8 +10,9 @@ from flashrank import Ranker, RerankRequest
 import uuid
 import firebase_admin
 from firebase_admin import credentials, firestore
-from datetime import datetime
+from datetime import datetime, timezone
 import torch
+import json
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 # Initialize Firebase Admin SDK
@@ -50,7 +51,7 @@ class MyPrivateVanna:
         print(f"Connected successfully to database: {dbname}")
 
     def generate_sql(self, question):
-        start_time=datetime.utcnow()
+        start_time=datetime.now(timezone.utc)
         print(start_time)
         # 1. Instruct Ollama to translate the entire sentence to Indonesian
         translation_prompt = (
@@ -119,6 +120,7 @@ class MyPrivateVanna:
 
         # 2. Force-inject additional schema context based on keyword detection
         q_lower = indonesian_sentence.lower() + " " + question.lower()
+
         schema_dim_mahasiswa = """Database Table Definition Asset:
     Table: akademik.dim_mahasiswa
     Description: Comprehensive master registry containing demographic profiles, family, and high school metadata for all registered students.
@@ -395,6 +397,9 @@ class MyPrivateVanna:
             f"   - If answerable: Output ONLY the raw executable SQL inside a markdown block: ```sql\\nSELECT ...\\n```\n"
             f"   - If unanswerable: Output ONLY the exact apology sentence as plain text (no markdown, no blocks).\n"
             f"8. Do not write explanations, introductions, or warnings. Output ONLY the code block or apology text as directed."
+            f"8. EXACT TABLE NAME FIDELITY (CRITICAL):\n"
+            f"   - Copy table names CHARACTER-FOR-CHARACTER from the schema context provided above.\n"
+            f"   - Do NOT abbreviate, drop letters, or modify long table names (e.g., write 'statis_aggr_lintas_periode_penyematan_status_mahasiswa', NEVER truncate or alter words like 'penyematan').\n"
         )
 
         print("\n" + "="*60)
@@ -428,7 +433,7 @@ class MyPrivateVanna:
         sql = re.sub(r';\s*(?=(ORDER BY|GROUP BY|LIMIT|HAVING))', ' ', sql, flags=re.IGNORECASE)
         sql = " ".join(sql.split()).strip()
 
-        end_time=datetime.utcnow()
+        end_time=datetime.now(timezone.utc)
         print(end_time)
         elapsed_time=end_time-start_time
         print(f"Elapsed Time for the request: {elapsed_time}")
@@ -479,6 +484,8 @@ def ask_ai():
             "sorry" in sql_query.lower() or 
             not sql_query.strip().upper().startswith("SELECT")
         )
+        records = []
+        query_id = str(uuid.uuid4())
 
         if is_rejection:
             # Bypass PostgreSQL and set the response immediately to avoid syntax crashes!
@@ -490,17 +497,13 @@ def ask_ai():
             # 2. Pipeline Action: Execute query on the Postgres database connection
             df = vn.run_sql(sql_query)
 
-            #store the id to retrieve easily later for download_csv
-            query_id = str(uuid.uuid4())
-            records = []
-
             # Convert DataFrame results to serialized JSON records
             records = []
             if df is not None:
                 query_cache[query_id] = df
 
-                # We cap at the top 100 rows to avoid crashing the client-side UI
-                records = df.head(10).to_dict(orient="records")
+                json_string = df.head(10).to_json(orient="records", date_format="iso")
+                records = json.loads(json_string)
 
             end_time2=datetime.utcnow()
             elapsed_time2=end_time2-start_time2
@@ -511,8 +514,7 @@ def ask_ai():
                 ai_reply += "No matching records found for this database query."
             else:
                 ai_reply += f"Query executed successfully. Displaying **{len(records)}** row(s) below."
-
-            print("records: ",records)
+                print("records: ",records)
 
         # Handles the firestore collections writing
         # 1. Append the assistant's new response to the local chat history list
@@ -531,7 +533,7 @@ def ask_ai():
             session_ref.set({
                 "session_id": session_id,
                 "title": session_title,
-                "updated_at": datetime.utcnow(),
+                "updated_at": datetime.now(timezone.utc),
                 "history": updated_history
             })
             print(f"[SERVER]: Syncing session {session_id} to Firestore.")
@@ -594,4 +596,4 @@ def download_csv():
 
 if __name__ == '__main__':
     # Running on local loopback interface (Port 5050) to route traffic from HTML frontend
-    app.run(host='127.0.0.1', port=5050, debug=True)
+    app.run(host='0.0.0.0', port=5050, debug=True)
