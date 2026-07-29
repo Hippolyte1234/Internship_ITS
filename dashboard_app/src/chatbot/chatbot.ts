@@ -1,7 +1,8 @@
-import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit, computed } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { FirebaseAuthService } from '../app/firebase-auth.service';
 
 export interface ChatMessage {
   role: string;
@@ -24,6 +25,8 @@ export interface Session {
 })
 export class ChatbotComponent implements OnInit {
   private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly authService = inject(FirebaseAuthService);
+  readonly currentUser = computed(() => this.authService.currentUser());
   chatHistory: ChatMessage[] = [];
   currentSessionId: string | null = null;
   sessions: Session[] = [];
@@ -186,7 +189,7 @@ export class ChatbotComponent implements OnInit {
       // Note: We filter out the temporary 'thinking' message before sending history
       const historyToSend = this.chatHistory
         .filter(msg => !msg.isThinking)
-        .map(msg => ({ role: msg.role, content: msg.content }));
+        .map(msg => ({ role: msg.role, content: msg.content, user: this.currentUser }));
 
       const response = await fetch('http://10.199.15.62:5050/ask-ai', {
         method: 'POST',
@@ -300,7 +303,7 @@ export class ChatbotComponent implements OnInit {
           .filter(msg => !msg.isThinking)
           .map(msg => ({ role: msg.role, content: msg.content }));
 
-      const response = await fetch('http://127.0.0.1:5053/ask-ai', {
+      const response = await fetch('http://10.199.15.62:5053/ask-ai', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
