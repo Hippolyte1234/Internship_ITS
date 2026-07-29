@@ -69,7 +69,7 @@ export class ChatbotComponent implements OnInit {
   // Pull previous conversation arrays directly from history_service
   async loadSessions(): Promise<void> {
     try {
-      const response = await fetch('http://127.0.0.1:5051/get-sessions');
+      const response = await fetch('http://10.199.15.62:5051/get-sessions');
       if (!response.ok) throw new Error('Could not fetch sessions list');
       
       const data = await response.json();
@@ -89,7 +89,7 @@ export class ChatbotComponent implements OnInit {
     this.chatHistory = []; // Triggers loading state in your HTML template
     
     try {
-      const response = await fetch(`http://127.0.0.1:5051/get-session/${sessionId}`);
+      const response = await fetch(`http://10.199.15.62:5051/get-session/${sessionId}`);
       if (!response.ok) throw new Error('Could not load history elements');
       
       const data = await response.json();
@@ -158,7 +158,7 @@ export class ChatbotComponent implements OnInit {
     this.chatHistory.push({
       role: 'assistant',
       isThinking: true,
-      formattedContent: this.sanitizer.bypassSecurityTrustHtml(`<strong>AI:</strong> <span class="thinking">Thinking...</span>`)
+      formattedContent: this.sanitizer.bypassSecurityTrustHtml(`<strong>AI:</strong> <span class="thinking">Thinking... Please wait between 1-3 mins</span>`)
     });
 
     const thinkingIndex = this.chatHistory.length - 1;
@@ -179,7 +179,7 @@ export class ChatbotComponent implements OnInit {
         .filter(msg => !msg.isThinking)
         .map(msg => ({ role: msg.role, content: msg.content }));
 
-      const response = await fetch('http://127.0.0.1:5050/ask-ai', {
+      const response = await fetch('http://10.199.15.62:5050/ask-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -360,7 +360,7 @@ export class ChatbotComponent implements OnInit {
   // Action helper routing cache requests to your gateway backend endpoint
   downloadCSV(queryId: string): void {
     if (!queryId) return;
-    const downloadUrl = `http://127.0.0.1:5050/download-csv?id=${queryId}`;
+    const downloadUrl = `http://10.199.15.62:5050/download-csv?id=${queryId}`;
     window.open(downloadUrl, '_blank');
   }
 
