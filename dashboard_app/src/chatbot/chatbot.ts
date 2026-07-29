@@ -301,7 +301,7 @@ export class ChatbotComponent implements OnInit {
     try{
       const historyToSend = this.chatHistory
           .filter(msg => !msg.isThinking)
-          .map(msg => ({ role: msg.role, content: msg.content }));
+          .map(msg => ({ role: msg.role, content: msg.content, user: this.currentUser }));
 
       const response = await fetch('http://10.199.15.62:5053/ask-ai', {
           method: 'POST',
