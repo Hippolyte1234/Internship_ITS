@@ -27,6 +27,7 @@ export class ChatbotComponent implements OnInit {
   private readonly changeDetector = inject(ChangeDetectorRef);
   private readonly authService = inject(FirebaseAuthService);
   readonly currentUser = computed(() => this.authService.currentUser());
+  userId = this.currentUser()?.uid ?? 'unknown_user'; // Fallback for unauthenticated users
   chatHistory: ChatMessage[] = [];
   currentSessionId: string | null = null;
   sessions: Session[] = [];
@@ -189,7 +190,7 @@ export class ChatbotComponent implements OnInit {
       // Note: We filter out the temporary 'thinking' message before sending history
       const historyToSend = this.chatHistory
         .filter(msg => !msg.isThinking)
-        .map(msg => ({ role: msg.role, content: msg.content, user: this.currentUser }));
+        .map(msg => ({ role: msg.role, content: msg.content, user: this.userId }));
 
       const response = await fetch('http://10.199.15.62:5050/ask-ai', {
         method: 'POST',
@@ -301,7 +302,7 @@ export class ChatbotComponent implements OnInit {
     try{
       const historyToSend = this.chatHistory
           .filter(msg => !msg.isThinking)
-          .map(msg => ({ role: msg.role, content: msg.content, user: this.currentUser }));
+          .map(msg => ({ role: msg.role, content: msg.content, user: this.userId }));
 
       const response = await fetch('http://10.199.15.62:5053/ask-ai', {
           method: 'POST',
