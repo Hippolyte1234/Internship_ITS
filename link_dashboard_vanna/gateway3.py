@@ -471,7 +471,7 @@ def ask_ai():
         # Extract the user's latest message
         start_time2=datetime.utcnow()
         user_question = chat_history[-1]["content"]
-        current_user = chat_history[-1]["user"]
+        current_user = chat_history[-1].get("user", "anonymous")
         print(f"\n[SERVER API]: Processing database question: '{user_question}'")
 
         # 1. Pipeline Action: Turn text to clean SQL using offline translation + Vector match + Re-ranker

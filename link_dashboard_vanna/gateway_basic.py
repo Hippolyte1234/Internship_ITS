@@ -44,7 +44,7 @@ def ask_ai():
             return jsonify({"error": "No prompt history found."}), 400
 
         user_question = chat_history[-1]["content"]
-        current_user = chat_history[-1]["user"]
+        current_user = chat_history[-1].get("user", "anonymous")
         print(f"\n[SERVER API]: Processing user question: '{user_question}'")
 
         answer = mg.pipeline(user_question)
