@@ -90,8 +90,6 @@ Columns:
   - tahun_keluar (integer) -- Year student completed studies or graduated
   - id (bigint) -- Sequence ID
   - version (integer) -- Version tracking index
-  - start_date (timestamp without time zone) -- Record valid from
-  - expired_date (timestamp without time zone) -- Record expired on
   - id_prodi (integer) -- Study program key
   - nama_prodi (character varying) -- Official Department major program name (e.g., 'Teknik Informatika', 'Sistem Informasi')
   - id_departemen (integer) -- Department parent key
@@ -394,9 +392,6 @@ Columns:
   - finger_id (integer) -- Biometric attendance device ID
   - has_nonpns (integer) -- 1 if staff has permanent nonpns history
   - id (integer) -- Internal sequence key
-  - version (integer) -- Record version tracker
-  - start_date (timestamp without time zone) -- Validity start date
-  - expired_date (timestamp without time zone) -- Validity end date
 Semantic Keywords & Translation Encodings: dosen, pengajar, guru, lecturer, teacher, staf akademik pengajar, data dosen, NIDN, serdos, pegawai, karyawan, status dosen aktif, daftar pendidik, tenaga fungsional pengajar, civitas akademika dosen, NIP, Nomor Pokok Pegawai, Nama Staff, Karyawan Tetap, Status Aktif, S1, S2, S3, Scopus, Sinta, Professor, Asisten Ahli, Lektor, PNS, Lecturer directory, staff email lists"""
 
     dim_satuan_kerja_def = """Database Table Definition Asset:
