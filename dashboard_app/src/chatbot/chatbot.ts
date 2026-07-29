@@ -1,5 +1,7 @@
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 
 export interface ChatMessage {
   role: string;
@@ -16,7 +18,9 @@ export interface Session {
 @Component({
   selector: 'app-chatbot',
   templateUrl: './chatbot.html',
-  styleUrls: ['./chatbot.css']
+  styleUrls: ['./chatbot.css'],
+  standalone: true,
+  imports: [FormsModule, CommonModule],
 })
 export class ChatbotComponent implements OnInit {
   private readonly changeDetector = inject(ChangeDetectorRef);
@@ -41,10 +45,15 @@ export class ChatbotComponent implements OnInit {
   }
 
   // Catch Enter key inputs to prevent needing manual button clicks
+  isBasicMode: boolean = true;
   onKeydown(event: KeyboardEvent): void {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-      this.sendToOllama();
+      if (this.isBasicMode) {
+        this.sendToOllamaBasic();
+      } else {
+        this.sendToOllama();
+      }
     }
   }
 
@@ -240,6 +249,118 @@ export class ChatbotComponent implements OnInit {
 
     } catch (error) {
       console.error('Pipeline failure:', error);
+      const updatedHistory = [...this.chatHistory];
+      updatedHistory[thinkingIndex] = {
+        role: 'assistant',
+        formattedContent: this.sanitizer.bypassSecurityTrustHtml(`<strong>AI:</strong> <span style="color: red; font-weight: bold;">Pipeline failure. Please check python console log outputs.</span>`)
+      };
+      this.chatHistory = updatedHistory;
+      
+      this.changeDetector.markForCheck(); // Trigger UI update on error
+    } finally {
+      this.isSending = false;
+      this.changeDetector.markForCheck(); // Ensure button re-enables
+    }
+  }
+
+  async sendToOllamaBasic(): Promise<void> {
+    const userPrompt = this.promptInput.trim();
+    
+    if (!userPrompt) {
+      return; // Guard against empty submits
+    }
+
+    // 2. Append User Prompt using clean native styles
+    this.chatHistory.push({
+      role: 'user',
+      content: userPrompt,
+      formattedContent: this.sanitizer.bypassSecurityTrustHtml(`<strong>You:</strong> ${this.escapeHtml(userPrompt)}`)
+    });
+
+    // 3. Create a temporary italicized loading element
+    this.chatHistory.push({
+      role: 'assistant',
+      isThinking: true,
+      formattedContent: this.sanitizer.bypassSecurityTrustHtml(`<strong>AI:</strong> <span class="thinking">Thinking... Please wait between 1-3 mins</span>`)
+    });
+
+    const thinkingIndex = this.chatHistory.length - 1;
+
+    // Instantly force layout repaint and align scroll container down
+    this.scrollToBottom();
+
+    // Brief yield block
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    this.promptInput = '';
+    this.isSending = true;
+
+    try{
+      const historyToSend = this.chatHistory
+          .filter(msg => !msg.isThinking)
+          .map(msg => ({ role: msg.role, content: msg.content }));
+
+      const response = await fetch('http://127.0.0.1:5053/ask-ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            history: historyToSend,
+            session_id: this.currentSessionId
+          })
+        });
+
+      if (!response.ok) {
+        throw new Error(`Pipeline returned connection status: ${response.status}`);
+      }
+
+      // Capture response as raw text to prevent the browser parser from crashing on non-standard JSON tokens
+      const responseRawText = await response.text();
+
+      // Regex replacement maps illegal standalone NaN float values to safe standard JSON nulls
+      const sanitizedJsonText = responseRawText.replace(/\bNaN\b/g, 'null');
+
+      // Safely parse the valid JSON text
+      const data = JSON.parse(sanitizedJsonText);
+      console.log('Database Response Data (Sanitized):', data);
+
+      if (data.session_id) {
+        console.log(data.session_id);
+        this.currentSessionId = data.session_id;
+      }
+
+      let aiReply = '';
+      let rawRecords: any[] = [];
+      let queryId = ''; // Track our backend cache reference ID instead of raw SQL
+
+      if (data.message) {
+        aiReply = data.message.content || '';
+        rawRecords = data.message.raw_data || [];
+        queryId = data.message.query_id || ''; // Extract the reference cache ID
+      }
+      console.log('--> THE EXTRACTED QUERY ID IS:', queryId);
+
+      // 4. Locate temporary loading element and inject clean formatted outputs
+      let finalHTML = `<strong>AI:</strong> ${this.formatAIResponse(aiReply)}`;
+
+      // Render raw datasets in a simple visual grid table if rows exist
+      if (rawRecords && rawRecords.length > 0) {
+        finalHTML += this.renderHtmlTable(rawRecords, queryId);
+      }
+
+      // Replace the temporary 'Thinking...' message in-place with the real response
+      const updatedHistory = [...this.chatHistory];
+      updatedHistory[thinkingIndex] = {
+        role: 'assistant',
+        content: aiReply,
+        formattedContent: this.sanitizer.bypassSecurityTrustHtml(finalHTML)
+      };
+      this.chatHistory = updatedHistory;
+
+      this.changeDetector.markForCheck(); // Trigger UI update after replacing "Thinking..."
+      this.scrollToBottom();
+
+      } catch (error) {
+        console.error('Pipeline failure:', error);
       const updatedHistory = [...this.chatHistory];
       updatedHistory[thinkingIndex] = {
         role: 'assistant',
