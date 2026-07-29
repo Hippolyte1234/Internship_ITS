@@ -30,9 +30,14 @@ except Exception as err:
 def get_sessions():
     if db is None:
         return jsonify({"error": "Database service is offline"}), 503
+
+    # Extract user_id from the query (GET) parameters
+    user_id = request.args.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Missing user_id parameter"}), 400
+
     try:
-        sessions_ref = db.collection("chat_sessions")
-        # Sort history items showing the latest updated chats first
+        sessions_ref = db.collection("users").document(user_id).collection("chat_sessions")        # Sort history items showing the latest updated chats first
         query = sessions_ref.order_by("updated_at", direction=firestore.Query.DESCENDING)
         docs = query.stream()
 
@@ -55,8 +60,14 @@ def get_sessions():
 def get_session_details(session_id):
     if db is None:
         return jsonify({"error": "Database service is offline"}), 503
+
+    # Extract user_id from the query (GET) parameters
+    user_id = request.args.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Missing user_id parameter"}), 400
+
     try:
-        session_ref = db.collection("chat_sessions").document(session_id)
+        sessions_ref = db.collection("users").document(user_id).collection("chat_sessions").document(session_id)
         doc = session_ref.get()
 
         if not doc.exists:
