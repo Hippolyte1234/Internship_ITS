@@ -60,7 +60,7 @@ export class ChartDataService {
     this.lastResponseContent = '';
 
     try {
-      const response = await fetch('http://127.0.0.1:5052/ask-ai', {
+      const response = await fetch('http://10.199.15.62:5052/ask-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

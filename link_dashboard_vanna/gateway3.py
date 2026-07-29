@@ -336,24 +336,6 @@ class MyPrivateVanna:
             f"Database Structural Options:\n"
             f"{schema_context}\n\n"
             f"EXACT SQL TEMPLATES (CRITICAL):\n"
-            f"If the user asks for the 'number of teachers/dosen in a certain department through the years X to Y', you MUST mimic this exact structure, replacing the years and the 'jurusan' (department) string dynamically. Use UNION ALL for each year requested:\n"
-            f"```sql\n"
-            f"SELECT '2023' AS tahun, COUNT(*) AS jumlah_dosen\n"
-            f"FROM kepegawaian.dim_pegawai AS dp\n"
-            f"WHERE dp.jenis_pegawai = 'Dosen'\n"
-            f"AND dp.status_aktif_simple = 'IN'\n"
-            f"AND (dp.tanggal_keluar IS NULL OR dp.tanggal_keluar >= '2023-01-01')\n"
-            f"AND dp.tanggal_masuk <= '2023-12-31'\n"
-            f"AND dp.jurusan ILIKE '%Informatika%'\n"
-            f"UNION ALL\n"
-            f"SELECT '2024' AS tahun, COUNT(*) AS jumlah_dosen\n"
-            f"FROM kepegawaian.dim_pegawai AS dp\n"
-            f"WHERE dp.jenis_pegawai = 'Dosen'\n"
-            f"AND dp.status_aktif_simple = 'IN'\n"
-            f"AND (dp.tanggal_keluar IS NULL OR dp.tanggal_keluar >= '2024-01-01')\n"
-            f"AND dp.tanggal_masuk <= '2024-12-31'\n"
-            f"AND dp.jurusan ILIKE '%Informatika%'\n"
-            f"```\n\n"
             f"If the user asks for the 'number of students/mahasiswa in a certain department through the years X to Y', you MUST mimic this exact structure, replacing the years and the 'jurusan' (department) string dynamically. Use UNION ALL for each year requested:\n"
             f"```sql\n"
             f"SELECT '2022' AS tahun, COUNT(*) AS jumlah_mahasiswa\n"
@@ -374,6 +356,24 @@ class MyPrivateVanna:
             f"AND m.tahun_masuk <= 2024\n"
             f"AND (m.tahun_keluar IS NULL OR m.tahun_keluar >= 2024)\n"
             f"ORDER BY tahun\n"
+            f"```\n\n"
+            f"If the user asks for the 'number of teachers/dosen in a certain department through the years X to Y', you MUST mimic this exact structure, replacing the years and the 'jurusan' (department) string dynamically. Use UNION ALL for each year requested:\n"
+            f"```sql\n"
+            f"SELECT '2023' AS tahun, COUNT(*) AS jumlah_dosen\n"
+            f"FROM kepegawaian.dim_pegawai AS dp\n"
+            f"WHERE dp.jenis_pegawai = 'Dosen'\n"
+            f"AND dp.status_aktif_simple = 'IN'\n"
+            f"AND (dp.tanggal_keluar IS NULL OR dp.tanggal_keluar >= '2023-01-01')\n"
+            f"AND dp.tanggal_masuk <= '2023-12-31'\n"
+            f"AND dp.jurusan ILIKE '%Informatika%'\n"
+            f"UNION ALL\n"
+            f"SELECT '2024' AS tahun, COUNT(*) AS jumlah_dosen\n"
+            f"FROM kepegawaian.dim_pegawai AS dp\n"
+            f"WHERE dp.jenis_pegawai = 'Dosen'\n"
+            f"AND dp.status_aktif_simple = 'IN'\n"
+            f"AND (dp.tanggal_keluar IS NULL OR dp.tanggal_keluar >= '2024-01-01')\n"
+            f"AND dp.tanggal_masuk <= '2024-12-31'\n"
+            f"AND dp.jurusan ILIKE '%Informatika%'\n"
             f"```\n\n"
             f"Task: Convert this request into a clean PostgreSQL query string: {question}\n\n"
             f"CRITICAL SYSTEM RULES:\n"
@@ -505,11 +505,11 @@ def ask_ai():
                 json_string = df.head(10).to_json(orient="records", date_format="iso")
                 records = json.loads(json_string)
 
-            # 3. Structure Assistant Reply (Markdown format with syntax block tags)
             end_time2=datetime.utcnow()
             elapsed_time2=end_time2-start_time2
 
-            ai_reply = f"**Time for processing the question: {elapsed_time2}**\n\n**Generated SQL Query:**\n```sql\n{sql_query}\n```\n\n**Query Database Results:**\n"
+            # 3. Structure Assistant Reply (Markdown format with syntax block tags)
+            ai_reply = f"**Time for processing question: {elapsed_time}**\n**Generated SQL Query:**\n```sql\n{sql_query}\n```\n\n**Query Database Results:**\n"
             if len(records) == 0:
                 ai_reply += "No matching records found for this database query."
             else:

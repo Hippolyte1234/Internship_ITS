@@ -158,7 +158,7 @@ export class ChatbotComponent implements OnInit {
     this.chatHistory.push({
       role: 'assistant',
       isThinking: true,
-      formattedContent: this.sanitizer.bypassSecurityTrustHtml(`<strong>AI:</strong> <span class="thinking">Thinking...</span>`)
+      formattedContent: this.sanitizer.bypassSecurityTrustHtml(`<strong>AI:</strong> <span class="thinking">Thinking... Please wait between 1-3 mins</span>`)
     });
 
     const thinkingIndex = this.chatHistory.length - 1;
