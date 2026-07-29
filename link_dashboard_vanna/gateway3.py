@@ -471,6 +471,7 @@ def ask_ai():
         # Extract the user's latest message
         start_time2=datetime.utcnow()
         user_question = chat_history[-1]["content"]
+        current_user = chat_history[-1]["user"]
         print(f"\n[SERVER API]: Processing database question: '{user_question}'")
 
         # 1. Pipeline Action: Turn text to clean SQL using offline translation + Vector match + Re-ranker
@@ -529,7 +530,7 @@ def ask_ai():
                 session_title = session_title[:37] + "..."
 
             # THIS is the part that implicitly creates the collection and document
-            session_ref = db.collection("chat_sessions").document(session_id)
+            session_ref = db.collection("users").document(current_user).collection("chat_sessions").document(session_id)
             session_ref.set({
                 "session_id": session_id,
                 "title": session_title,

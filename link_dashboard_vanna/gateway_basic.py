@@ -44,6 +44,7 @@ def ask_ai():
             return jsonify({"error": "No prompt history found."}), 400
 
         user_question = chat_history[-1]["content"]
+        current_user = chat_history[-1]["user"]
         print(f"\n[SERVER API]: Processing user question: '{user_question}'")
 
         answer = mg.pipeline(user_question)
@@ -62,7 +63,7 @@ def ask_ai():
                 session_title = session_title[:37] + "..."
 
             # THIS is the part that implicitly creates the collection and document
-            session_ref = db.collection("chat_sessions").document(session_id)
+            session_ref = db.collection("users").document(current_user).collection("chat_sessions").document(session_id)
             session_ref.set({
                 "session_id": session_id,
                 "title": session_title,
@@ -86,4 +87,4 @@ def ask_ai():
 
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5053, debug=True)
+    app.run(host='0.0.0.0', port=5053, debug=True)
