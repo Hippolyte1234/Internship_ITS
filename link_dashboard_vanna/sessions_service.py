@@ -67,7 +67,7 @@ def get_session_details(session_id):
         return jsonify({"error": "Missing user_id parameter"}), 400
 
     try:
-        sessions_ref = db.collection("users").document(user_id).collection("chat_sessions").document(session_id)
+        session_ref = db.collection("users").document(user_id).collection("chat_sessions").document(session_id)
         doc = session_ref.get()
 
         if not doc.exists:
