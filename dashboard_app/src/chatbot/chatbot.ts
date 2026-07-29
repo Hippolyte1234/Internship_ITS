@@ -82,7 +82,7 @@ export class ChatbotComponent implements OnInit {
   // Pull previous conversation arrays directly from history_service
   async loadSessions(): Promise<void> {
     try {
-      const response = await fetch('http://10.199.15.62:5051/get-sessions');
+      const response = await fetch(`http://10.199.15.62:5051/get-sessions?user_id=${this.userId}`);
       if (!response.ok) throw new Error('Could not fetch sessions list');
       
       const data = await response.json();
@@ -102,7 +102,7 @@ export class ChatbotComponent implements OnInit {
     this.chatHistory = []; // Triggers loading state in your HTML template
     
     try {
-      const response = await fetch(`http://10.199.15.62:5051/get-session/${sessionId}`);
+      const response = await fetch(`http://10.199.15.62:5051/get-session/${sessionId}?user_id=${this.userId}`);
       if (!response.ok) throw new Error('Could not load history elements');
       
       const data = await response.json();
