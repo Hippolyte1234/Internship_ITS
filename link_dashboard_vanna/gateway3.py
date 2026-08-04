@@ -510,7 +510,7 @@ def ask_ai():
             elapsed_time2=end_time2-start_time2
 
             # 3. Structure Assistant Reply (Markdown format with syntax block tags)
-            ai_reply = f"**Time for processing question: {elapsed_time}**\n**Generated SQL Query:**\n```sql\n{sql_query}\n```\n\n**Query Database Results:**\n"
+            ai_reply = f"**Time for processing question: {elapsed_time2}**\n**Generated SQL Query:**\n```sql\n{sql_query}\n```\n\n**Query Database Results:**\n"
             if len(records) == 0:
                 ai_reply += "No matching records found for this database query."
             else:
