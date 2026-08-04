@@ -38,14 +38,34 @@ export class AiChartComponent implements OnInit {
 
         setTimeout(() => {
           this.chartType = payload.chartType;
+          
+          // 1. Define a color palette for Bar and Line charts
+          const barBgColors = [
+            'rgba(37, 99, 235, 0.6)',  // Blue
+            'rgba(239, 68, 68, 0.6)',  // Red
+            'rgba(16, 185, 129, 0.6)', // Green
+            'rgba(245, 158, 11, 0.6)', // Amber
+            'rgba(139, 92, 246, 0.6)'  // Purple
+          ];
+          
+          const barBorderColors = [
+            '#2563eb', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'
+          ];
+
           this.chartData = {
             labels: [...payload.labels],
-            datasets: payload.datasets.map(d => ({
+            // 2. Add 'index' to the map function arguments
+            datasets: payload.datasets.map((d, index) => ({
               ...d,
               backgroundColor: payload.chartType === 'pie' 
                 ? ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'] 
-                : 'rgba(37, 99, 235, 0.5)',
-              borderColor: '#2563eb',
+                // 3. Dynamically assign color based on the dataset index
+                : barBgColors[index % barBgColors.length], 
+              
+              borderColor: payload.chartType === 'pie'
+                ? '#ffffff' // White borders look better on pie charts
+                : barBorderColors[index % barBorderColors.length],
+                
               borderWidth: 1
             }))
           };
