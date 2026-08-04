@@ -452,6 +452,8 @@ class MyPrivateVanna:
             raise Exception("Database connection is missing!")
         return pd.read_sql_query(sql, self.conn)
 
+        
+
 
 # --- 2. INITIALIZE GLOBAL SERVICES ---
 # Timeout configurations to protect slow model generation steps on local CPU
@@ -533,7 +535,34 @@ def ask_ai():
             print("[SERVER API]: Rejection triggered. PostgreSQL execution bypassed.")
         else:
             # Run the extracted SQL query directly against the Postgres database connection
+
             df = vn.run_sql(sql_query)
+
+            # INTERCEPT & PIVOT THE DATA
+            if chart_type == "bar" and len(df.columns) == 3:
+                try:
+                    col_category = df.columns[0] # e.g., 'jenis' (Dosen/Mahasiswa)
+                    col_xaxis = df.columns[1]    # e.g., 'tahun' (2015, 2016)
+                    col_value = df.columns[2]    # e.g., 'jumlah' (34, 1340)
+
+                    # Pivot the data: Years become rows, Categories become separate columns
+                    df_pivoted = df.pivot(
+                        index=col_xaxis, 
+                        columns=col_category, 
+                        values=col_value
+                    ).reset_index()
+                    
+                    # Clean up column names
+                    df_pivoted.columns.name = None 
+                    
+                    # Overwrite the original dataframe with the pivoted one
+                    df = df_pivoted
+                    
+                    print("[SERVER API]: Successfully pivoted dataframe for side-by-side bar chart.")
+                except Exception as e:
+                    print(f"[SERVER API]: Could not pivot dataframe: {e}")
+                    # If it fails, df safely remains the original 3-column version
+
             query_id = str(uuid.uuid4())
             records = []
 
