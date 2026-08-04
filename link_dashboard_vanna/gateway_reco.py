@@ -405,10 +405,10 @@ class MyPrivateVanna:
             f"  \"sql\": \"SELECT a.col1, SUM(a.col2) AS total FROM akademik.table AS a GROUP BY a.col1 ORDER BY a.col1 ASC\",\n"
             f"  \"type\": \"line\"\n"
             f"}}\n"
-            f"CRITICAL CHART SELECTION RULES for the "type" field:\n"
-            f"1. If the user asks for a trend of a SINGLE metric over time, use "line".\n"
-            f"2. If the user explicitly asks to COMPARE two or more distinct metrics (using words like "vs", "versus", "compare", "perbandingan"), you MUST use "bar" so they can be rendered as grouped bar charts side-by-side.\n"
-            f"3. If the user asks for a proportional breakdown (e.g., "percentage of", "distribution"), use "pie".\n"
+            f"CRITICAL CHART SELECTION RULES for the 'type' field:\n"
+            f"1. If the user asks for a trend of a SINGLE metric over time, use 'line'.\n"
+            f"2. If the user explicitly asks to COMPARE two or more distinct metrics (using words like 'vs', 'versus', 'compare', 'perbandingan'), you MUST use 'bar' so they can be rendered as grouped bar charts side-by-side.\n"
+            f"3. If the user asks for a proportional breakdown (e.g., 'percentage of', 'distribution'), use 'pie'.\n"
             f"Output ONLY the JSON structure or the exact apology text statement string. No preamble, no post-scripts, no notes.\n"
         )
 
