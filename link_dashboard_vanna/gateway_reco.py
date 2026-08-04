@@ -541,27 +541,29 @@ def ask_ai():
             # INTERCEPT & PIVOT THE DATA
             if chart_type == "bar" and len(df.columns) == 3:
                 try:
-                    col_category = df.columns[0] # e.g., 'jenis' (Dosen/Mahasiswa)
-                    col_xaxis = df.columns[1]    # e.g., 'tahun' (2015, 2016)
-                    col_value = df.columns[2]    # e.g., 'jumlah' (34, 1340)
+                    # 1. Intelligently identify columns by matching keywords in their names
+                    cols = df.columns
+                    
+                    col_xaxis = next((c for c in cols if any(k in c.lower() for k in ['tahun', 'periode', 'tanggal', 'year', 'date', 'month'])), cols[1])
+                    col_value = next((c for c in cols if any(k in c.lower() for k in ['jumlah', 'total', 'count', 'sum'])), cols[2])
+                    col_category = next((c for c in cols if c != col_xaxis and c != col_value), cols[0])
 
-                    # Pivot the data: Years become rows, Categories become separate columns
+                    # 2. Pivot the data using the guaranteed column roles
                     df_pivoted = df.pivot(
-                        index=col_xaxis, 
-                        columns=col_category, 
-                        values=col_value
+                        index=col_xaxis,      # Guaranteed to be 'tahun' (2015, 2016)
+                        columns=col_category, # Guaranteed to be 'jenis' (Dosen, Mahasiswa)
+                        values=col_value      # Guaranteed to be the numeric count
                     ).reset_index()
                     
-                    # Clean up column names
+                    # 3. Clean up the dataframe index name
                     df_pivoted.columns.name = None 
                     
-                    # Overwrite the original dataframe with the pivoted one
+                    # 4. Overwrite original dataframe
                     df = df_pivoted
                     
-                    print("[SERVER API]: Successfully pivoted dataframe for side-by-side bar chart.")
+                    print("[SERVER API]: Successfully dynamically pivoted dataframe.")
                 except Exception as e:
                     print(f"[SERVER API]: Could not pivot dataframe: {e}")
-                    # If it fails, df safely remains the original 3-column version
 
             query_id = str(uuid.uuid4())
             records = []
