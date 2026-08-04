@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, inject, OnInit, computed } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit, computed, effect } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -27,7 +27,7 @@ export class ChatbotComponent implements OnInit {
   private readonly changeDetector = inject(ChangeDetectorRef);
   private readonly authService = inject(FirebaseAuthService);
   readonly currentUser = computed(() => this.authService.currentUser());
-  userId = this.currentUser()?.uid ?? 'unknown_user'; // Fallback for unauthenticated users
+  userId = this.currentUser()?.uid; // Fallback for unauthenticated users
   chatHistory: ChatMessage[] = [];
   currentSessionId: string | null = null;
   sessions: Session[] = [];
@@ -39,13 +39,26 @@ export class ChatbotComponent implements OnInit {
   isToastVisible: boolean = false;
 
   constructor(private sanitizer: DomSanitizer) {
-    // Expose downloadCSV globally so the dynamically injected HTML button can trigger it
     (window as any).downloadCSV = this.downloadCSV.bind(this);
+
+    effect(() => {
+      console.log('Current User State:', this.authService.currentUser()?.email);
+      const user = this.authService.currentUser();
+      
+      if (user && user.uid) {
+        // Firebase has finished loading the user! Now fetch the data.
+        this.loadSessions();
+      } else {
+        // User is null (either loading or logged out)
+        this.sessions = [];
+        this.chatHistory = [];
+      }
+    });
   }
 
   // Initialize and load historical metadata lists from service instantly on load
   ngOnInit(): void {
-    this.loadSessions();
+    /*this.loadSessions();*/ /*too fast so the user loads as null, so we moved it to the effect() above*/
   }
 
   // Catch Enter key inputs to prevent needing manual button clicks
