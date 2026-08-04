@@ -18,33 +18,42 @@ export class RegisterPage {
   readonly registerForm = new FormGroup({
     email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
     password: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    /*To delete if we want to remove the possibility to create admin users from the register page*/
+    role: new FormControl<'user' | 'admin'>('user', { nonNullable: true }),
   });
 
   readonly authMessage = signal('');
   readonly isSubmitting = signal(false);
   readonly isRegistered = signal(false);
 
-  submitRegister(): void {
+  async submitRegister(): Promise<void> {
     if (this.registerForm.invalid) {
       this.authMessage.set('Please enter a valid email and password.');
       return;
     }
 
-    const { email, password } = this.registerForm.getRawValue();
+    const { email, password, role } = this.registerForm.getRawValue();
     this.isSubmitting.set(true);
 
-    this.authService
-      .signUp(email, password)
-      .then(() => {
-        this.isRegistered.set(true);
-        this.authMessage.set('Account created successfully. Welcome aboard.');
-      })
-      .catch((error: unknown) => {
-        this.authMessage.set(this.getFriendlyMessage(error));
-      })
-      .finally(() => {
-        this.isSubmitting.set(false);
-      });
+    try {
+      // 2. Await account creation & capture returned user credential
+      const userCredential = await this.authService.signUp(email, password);
+      const newUid = userCredential?.user?.uid;
+
+      if (!newUid) {
+        throw new Error('User creation failed: No valid UID returned from Firebase.');
+      }
+
+      // 3. Await role assignment using the confirmed UID
+      await this.authService.assignUserRole(email, newUid, role);
+
+      this.isRegistered.set(true);
+      this.authMessage.set('Account created successfully. Welcome aboard.');
+    } catch (error: unknown) {
+      this.authMessage.set(this.getFriendlyMessage(error));
+    } finally {
+      this.isSubmitting.set(false);
+    }
   }
 
   goToLogin(): void {

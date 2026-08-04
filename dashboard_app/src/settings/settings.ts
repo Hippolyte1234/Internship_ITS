@@ -1,11 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, Injectable } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FirebaseAuthService } from '../app/firebase-auth.service';
+import { AsyncPipe } from '@angular/common';
+
+
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, AsyncPipe],
   templateUrl: './settings.html',
   styleUrl: './settings.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -16,17 +19,18 @@ export class SettingsPanel {
   readonly settingsForm = new FormGroup({
     email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
     password: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(2)] }),
-    role: new FormControl<'classic' | 'admin'>('classic', { nonNullable: true }),
+    role: new FormControl<'user' | 'admin'>('user', { nonNullable: true }),
   });
 
   readonly message = signal('');
   readonly isSubmitting = signal(false);
   readonly currentUser = computed(() => this.authService.currentUser());
-  readonly userRole = computed(() => {
+  /*readonly userRole = computed(() => {
     const email = this.authService.currentUser()?.email ?? '';
     const storedRole = email ? localStorage.getItem(`dashboard-account-role:${email}`) : null;
     return storedRole === 'admin' ? 'admin' : 'user';
-  });
+  });*/
+  readonly userRole = this.authService.getUserRole(this.authService.currentUser()?.uid ?? '');
 
   async createAccount(): Promise<void> {
     if (this.settingsForm.invalid) {
@@ -38,8 +42,17 @@ export class SettingsPanel {
     this.isSubmitting.set(true);
 
     try {
-      await this.authService.signUp(email, password);
-      localStorage.setItem(`dashboard-account-role:${email}`, role);
+      const userCredential = await this.authService.signUp(email, password);
+      const newUid = userCredential?.user?.uid;
+
+      if (!newUid) {
+        throw new Error('User creation failed: No valid UID returned from Firebase.');
+      }
+
+      // 3. Await role assignment using the confirmed UID
+      await this.authService.assignUserRole(email, newUid, role);
+
+      /*localStorage.setItem(`dashboard-account-role:${email}`, role);*/
       this.message.set(role === 'admin' ? 'Admin account created successfully.' : 'User account created successfully.');
     } catch (error) {
       this.message.set(this.getFriendlyMessage(error));

@@ -22,7 +22,7 @@
             <input formControlName="password" type="password" autocomplete="new-password" placeholder="Enter password" />
           </label>
 
-          @if (userRole() === 'admin') {
+          @if ((userRole | async) === 'admin') {
             <p class="message info">As an admin, you can create new user or admin accounts.</p>
             <label class="field">
               <span>Role</span>

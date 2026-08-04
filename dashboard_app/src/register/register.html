@@ -18,6 +18,14 @@
           <input formControlName="password" type="password" autocomplete="new-password" placeholder="Enter password" />
         </label>
 
+        <label class="field">
+          <span>Role</span>
+          <select formControlName="role">
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+          </select>
+        </label>
+
         @if (authMessage()) {
           <p class="message error">{{ authMessage() }}</p>
         }
