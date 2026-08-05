@@ -595,7 +595,7 @@ def ask_ai():
 
         if db is not None:
             session_ref = db.collection('users').document(current_user)
-            session_ref.set({
+            session_ref.update({
                 "type": "graphics_history",
                 "session_id": session_id,
                 "history": updated_history,
