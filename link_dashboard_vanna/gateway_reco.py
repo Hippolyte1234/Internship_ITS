@@ -10,7 +10,7 @@ from flashrank import Ranker, RerankRequest
 import uuid
 import firebase_admin
 from firebase_admin import credentials, firestore
-from datetime import datetime
+from datetime import datetime, timezone
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import json
