@@ -472,10 +472,11 @@ def ask_ai():
     try:
 
         payload = request.get_json() or {}
-        user_question = payload.get("prompt", "").strip()
         session_id = payload.get("session_id") or str(uuid.uuid4())
 
         graphics_history = payload.get("history", [])
+        user_question = graphics_history[-1]["content"]
+        current_user = graphics_history[-1].get("user", "anonymous")
         
         if not user_question:
             return jsonify({"error": "No 'prompt' parameter found in request body."}), 400

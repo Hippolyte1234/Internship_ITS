@@ -1,5 +1,8 @@
-import { Injectable } from '@angular/core';
+import { computed, inject, Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { ChatMessage } from '../chatbot/chatbot';
+import { FirebaseAuthService } from '../app/firebase-auth.service';
+import { DomSanitizer } from '@angular/platform-browser';
 
 // Define an interface matching the expected backend chart format
 export interface ChartPayload {
@@ -13,8 +16,13 @@ export interface ChartPayload {
 })
 export class ChartDataService {
   private chartDataSubject = new BehaviorSubject<ChartPayload | null>(null);
+  private readonly authService = inject(FirebaseAuthService);
+  private readonly sanitizer = inject(DomSanitizer);
   public chartData$: Observable<ChartPayload | null> = this.chartDataSubject.asObservable();
 
+  readonly currentUser = computed(() => this.authService.currentUser());
+  userId = this.currentUser()?.uid; // Fallback for unauthenticated users
+  graphicsHistory: ChatMessage[] = [];
   public currentSessionId: string | null = null;
   public promptInput: string = '';
   public isSending: boolean = false; 
@@ -55,17 +63,35 @@ export class ChartDataService {
       return;
     }
 
+    // 2. Append User Prompt using clean native styles
+    this.graphicsHistory.push({
+      role: 'user',
+      content: userPrompt,
+      formattedContent: this.sanitizer.bypassSecurityTrustHtml(`<strong>You:</strong> ${userPrompt}`)
+    });
+
+    // 3. Create a temporary italicized loading element
+    this.graphicsHistory.push({
+      role: 'assistant',
+      isThinking: true,
+      formattedContent: this.sanitizer.bypassSecurityTrustHtml(`<strong>AI:</strong> <span class="thinking">Thinking... Please wait between 1-3 mins</span>`)
+    });
+
     this.promptInput = ''; 
     this.scrollToBottom();
     this.lastResponseContent = '';
 
     try {
+      const historyToSend = this.graphicsHistory
+        .filter(msg => !msg.isThinking)
+        .map(msg => ({ role: msg.role, content: msg.content, user: this.userId }));
+
       const response = await fetch('http://10.199.15.62:5052/ask-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          history: historyToSend,
           session_id: this.currentSessionId,
-          prompt: cleanPrompt
         })
       });
 
