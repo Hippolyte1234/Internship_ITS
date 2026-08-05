@@ -474,6 +474,8 @@ def ask_ai():
         payload = request.get_json() or {}
         user_question = payload.get("prompt", "").strip()
         session_id = payload.get("session_id") or str(uuid.uuid4())
+
+        graphics_history = payload.get("history", [])
         
         if not user_question:
             return jsonify({"error": "No 'prompt' parameter found in request body."}), 400
@@ -580,6 +582,26 @@ def ask_ai():
                 ai_reply += "No matching records found for this database query."
             else:
                 ai_reply += f"Query executed successfully. Displaying **{len(records)}** row(s)."
+
+
+        # Firestore collection writing
+        updated_history = list(graphics_history)  # Create a mutable copy of the history list
+        updated_history.append({
+            "role": "assistant",
+            "content": ai_reply,
+            "query_id": query_id
+        })
+
+        if db is not None:
+            session_ref = db.collection('users').document(current_user)
+            session_ref.set({
+                "type": "graphics_history",
+                "session_id": session_id,
+                "history": updated_history,
+                "updated_at": datetime.now(timezone.utc)
+            })
+            print(f"[SERVER]: Syncing session {session_id} to Firestore.")
+
 
         # Return response payload down the stream matching what your Angular service expects
         return jsonify({
